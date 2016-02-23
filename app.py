@@ -66,9 +66,12 @@ def index():
 def api():
     data = request.json
 
-    komm1 = createkomm(data.get('komm1'))
+    komm1_id = data.get('komm1')
+    komm1 = createkomm(komm1_id)
     komm1['winner'] = True
-    komm2 = createkomm(data.get('komm2'))
+
+    komm2_id = data.get('komm2')
+    komm2 = createkomm(komm2_id)
 
     komm = [komm1, komm2]
 
@@ -87,7 +90,7 @@ def api():
 
     response = make_response(r.content)
 
-    filename = 'Norkart_Kommunekamp_%s_vs_%s_%s.pdf' % (komm1, komm2, int(time.time()))
+    filename = 'Norkart_Kommunekamp_%s_vs_%s_%s.pdf' % (komm1_id, komm2_id, int(time.time()))
     response.headers['Content-Disposition'] = 'attachment; filename="%s"' % filename
     response.mimetype = r.headers['content-type']
     return response
