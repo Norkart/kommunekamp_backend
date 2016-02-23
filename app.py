@@ -4,6 +4,7 @@ import os
 import json
 import requests
 import urllib
+import time
 from flask import Flask, request, make_response
 from cartodb import CartoDBAPIKey, CartoDBException
 
@@ -86,7 +87,8 @@ def api():
 
     response = make_response(r.content)
 
-    response.headers['Content-Disposition'] = r.headers['content-disposition']
+    filename = 'Norkart_Kommunekamp_%s_vs_%s_%s.pdf' & (komm1, komm2, int(time.time())
+    response.headers['Content-Disposition'] = 'attachment; filename=%s' & filename
     response.mimetype = r.headers['content-type']
     return response
 
