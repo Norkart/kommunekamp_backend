@@ -62,16 +62,47 @@ def index():
     return 'test'
 
 
+def get_scores(komm1, komm2, attribute, factor):
+    total = float(komm1[attribute] + komm2[attribute])
+    komm1_percentage = float(komm1[attribute]) / total
+    komm2_percentage = float(komm2[attribute]) / total
+
+    return komm1_percentage * factor, komm2_percentage * factor
+
+
+def get_winner(komm1, komm2):
+    komm1_scores = []
+    komm2_scores = []
+    attrs = [
+        {'attr': 'numBreweries', 'factor': 0.6},
+        {'attr': 'kmTrails', 'factor': 0.2},
+        {'attr': 'percentageUnder35', 'factor': 0.3}
+    ]
+
+    for attr in attrs:
+        komm1_score, komm2_score = get_scores(komm1, komm2, attr['attr'], attr['factor'])
+        komm1_scores.append(komm1_score)
+        komm2_scores.append(komm2_score)
+
+    return sum(komm1_scores), sum(komm2_scores)
+
+
 @app.route('/report', methods=['POST'])
 def api():
     data = request.json
 
     komm1_id = data.get('komm1')
     komm1 = createkomm(komm1_id)
-    komm1['winner'] = True
 
     komm2_id = data.get('komm2')
     komm2 = createkomm(komm2_id)
+
+    komm1_score, komm2_score = get_winner(komm1, komm2)
+
+    if komm1_score > komm2_score:
+        komm1['winner'] = True
+    elif komm1_score < komm2_score:
+        komm2['winner'] = True
 
     komm = [komm1, komm2]
 
