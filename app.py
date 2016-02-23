@@ -88,7 +88,7 @@ def api():
     response = make_response(r.content)
 
     filename = 'Norkart_Kommunekamp_%s_vs_%s_%s.pdf' & (komm1, komm2, int(time.time())
-    response.headers['Content-Disposition'] = 'attachment; filename=%s' & filename
+    response.headers['Content-Disposition'] = 'attachment; filename="%s"' & filename
     response.mimetype = r.headers['content-type']
     return response
 
