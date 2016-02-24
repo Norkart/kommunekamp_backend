@@ -29,6 +29,7 @@ def get_komm(komm_id):
     }
     query = urllib.quote_plus('FTEMA=4003 AND KOMM=%s' % komm_id)
     url = '%s/datasets/7/features/query?Query=%s' % (DATAVAREHUS_URL, query)
+    print url
     r = requests.get(url, headers=headers)
     d = r.json()
     if 'features' in d:
