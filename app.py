@@ -29,8 +29,11 @@ def get_komm(komm_id):
     }
     query = urllib.quote_plus('FTEMA=4003 AND KOMM=%s' % komm_id)
     url = '%s/datasets/7/features/query?Query=%s' % (DATAVAREHUS_URL, query)
+    print url
     r = requests.get(url, headers=headers)
+    print r
     d = r.json()
+    print d
     if 'features' in d:
         return d['features'][0]
 
@@ -64,10 +67,12 @@ def index():
 
 def get_scores(komm1, komm2, attribute, factor):
     total = float(komm1[attribute] + komm2[attribute])
-    komm1_percentage = float(komm1[attribute]) / total
-    komm2_percentage = float(komm2[attribute]) / total
+    if total > 0:
+        komm1_percentage = float(komm1[attribute]) / total
+        komm2_percentage = float(komm2[attribute]) / total
 
-    return komm1_percentage * factor, komm2_percentage * factor
+        return komm1_percentage * factor, komm2_percentage * factor
+    return 0.0, 0.0
 
 
 def get_winner(komm1, komm2):
