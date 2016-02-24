@@ -10,7 +10,6 @@ from cartodb import CartoDBAPIKey, CartoDBException
 
 
 app = Flask(__name__)
-app.debug = True
 
 TEMPLATE_ID = '4ySbCCCqx'
 TOKEN = os.environ.get('TOKEN', None)
@@ -29,7 +28,6 @@ def get_komm(komm_id):
     }
     query = urllib.quote_plus('FTEMA=4003 AND KOMM=%s' % komm_id)
     url = '%s/datasets/7/features/query?Query=%s' % (DATAVAREHUS_URL, query)
-    print url
     r = requests.get(url, headers=headers)
     d = r.json()
     if 'features' in d:
@@ -39,28 +37,65 @@ def get_komm(komm_id):
 def createkomm(id):
     komm = get_komm(id)
     return {
-        "komm": id,
-        "name": komm['properties']['ADMENHETNAVN.NAVN'],
-        "numBreweries": get_breweries(komm),
-        "kmTrails": 100,
-        "percentageUnder35": 30,
-        "winner": False
+        'komm': id,
+        'name': komm['properties']['ADMENHETNAVN.NAVN'],
+        'numBreweries': get_breweries(komm),
+        'kmFootTrails': get_foot_trails(komm),
+        'percentageUnder35': 30,
+        'winner': False
     }
+
+
+def geojson_sql(geometry):
+    return 'ST_SetSrid(ST_GeomFromGeoJSON(\'%s\'), 4326)' % json.dumps(geometry)
 
 
 def get_breweries(komm):
     cl = CartoDBAPIKey(CDB_KEY, CDB_DOMAIN)
     try:
-        res = cl.sql('select count(*) FROM osm_breweries WHERE ST_Contains(ST_SetSrid(ST_GeomFromGeoJSON(\'%s\'), 4326), the_geom)' % json.dumps(komm['geometry']))
+        res = cl.sql('''
+            SELECT
+                 count(*)
+            FROM 
+                osm_breweries
+            WHERE
+                ST_Contains(%s, the_geom)
+        ''' % geojson_sql(komm['geometry']))
+
         return res['rows'][0]['count']
+    except CartoDBException:
+        return -1
+
+
+def get_foot_trails(komm):
+    cl = CartoDBAPIKey(CDB_KEY, CDB_DOMAIN)
+    try:
+        gj = geojson_sql(komm['geometry'])
+        query = '''
+            SELECT
+                SUM(
+                  ST_Length(
+                    ST_INTERSECTION(
+                        s.the_geom::geography,
+                        %s::geography
+                    )
+                  )
+                ) / 1000 as len
+            FROM
+                fotrute s
+            WHERE
+                ST_Intersects(%s, s.the_geom);
+        ''' % (gj, gj)
+        res = cl.sql(query)
+        length = res['rows'][0]['len']
+        return round(length) if length is not None else 0
     except CartoDBException:
         return -1
 
 
 @app.route('/')
 def index():
-    get_breweries(get_komm('1601'))
-    return 'test'
+    return '%s' % get_foot_trails(get_komm('1601'))
 
 
 def get_scores(komm1, komm2, attribute, factor):
@@ -78,8 +113,8 @@ def get_winner(komm1, komm2):
     komm2_scores = []
     attrs = [
         {'attr': 'numBreweries', 'factor': 0.6},
-        {'attr': 'kmTrails', 'factor': 0.2},
-        {'attr': 'percentageUnder35', 'factor': 0.3}
+        {'attr': 'kmFootTrails', 'factor': 0.2},
+        {'attr': 'percentageUnder35', 'factor': 0.3},
     ]
 
     for attr in attrs:
@@ -131,4 +166,4 @@ def api():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
