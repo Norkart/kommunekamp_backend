@@ -12,6 +12,7 @@ from shapely.geometry import shape
 from datavarehus import get_komm, dataset_bbox
 
 app = Flask(__name__)
+app.debug = True
 
 TEMPLATE_ID = '4ySbCCCqx'
 TOKEN = os.environ.get('TOKEN', None)
